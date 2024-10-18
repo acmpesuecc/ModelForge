@@ -37,7 +37,64 @@ logging.basicConfig(filename="logs/modelforge.log", filemode='w',level=logging.I
 class Loader:
     def __init__(self, config_path):
         self.config = self.load_config(config_path)
+        self.check_config(self.config);
+        # print(self.config)
         self.data = None
+
+    def check_config(self, config):
+        required_fields = {
+            'dataset': dict,
+            'input_features': list,
+            'output_features': list,
+            'training': list,
+            'preprocessing': dict
+        }
+        
+        for field, expected_type in required_fields.items():
+            if field not in self.config:
+                logging.error(f"Missing required field: {field}")
+                raise ValueError(f"Missing required field: {field}")
+
+            if not isinstance(self.config[field], expected_type):
+                logging.error(f"Field '{field}' must be of type {expected_type.__name__}")
+                raise TypeError(f"Field '{field}' must be of type {expected_type.__name__}")
+
+        # Additional checks for specific fields can be added here
+        self.validate_dataset(self.config['dataset'])
+        self.validate_input_features(self.config['input_features'])
+        self.validate_output_features(self.config['output_features'])
+        self.validate_training(self.config['training'])
+        self.validate_preprocessing(self.config['preprocessing'])
+
+    def validate_dataset(self, dataset):
+        required_keys = ['path', 'format', 'delimiter']
+        for key in required_keys:
+            if key not in dataset:
+                logging.error(f"Missing '{key}' in dataset configuration")
+                raise ValueError(f"Missing '{key}' in dataset configuration")
+
+    def validate_input_features(self, input_features):
+        for feature in input_features:
+            if 'name' not in feature or 'type' not in feature:
+                logging.error(f"Input feature {feature} is missing 'name' or 'type'")
+                raise ValueError("Each input feature must have 'name' and 'type' keys.")
+
+    def validate_output_features(self, output_features):
+        for feature in output_features:
+            if 'name' not in feature or 'type' not in feature or 'num_classes' not in feature:
+                logging.error(f"Output feature {feature} is missing required fields")
+                raise ValueError("Each output feature must have 'name', 'type', and 'num_classes' keys.")
+
+    def validate_training(self, training):
+        for entry in training:
+            if not isinstance(entry, dict) or 'learning_rate' not in entry or 'batch_size' not in entry:
+                logging.error(f"Training configuration {entry} is missing required fields")
+                raise ValueError("Each training entry must include 'learning_rate' and 'batch_size'.")
+
+    def validate_preprocessing(self, preprocessing):
+        if 'split' not in preprocessing or 'text' not in preprocessing:
+            logging.error("Preprocessing configuration must include 'split' and 'text'")
+            raise ValueError("Preprocessing configuration must include 'split' and 'text'.")
 
     def load_config(self, config_path):
         logging.info(f"Loading config from {config_path}")
