@@ -608,7 +608,6 @@ def main():
         sys.exit(1)
 
     config_path = sys.argv[1]
-    #config_path = 'config.yaml'
     console = Console()
 
     logging.info("Starting main function")
@@ -616,39 +615,42 @@ def main():
     # Load data and config
     loader = Loader(config_path)
     config = loader.load_config(config_path)
-    print("\nUser specified config file\n")
+    print("\nUser  specified config file\n")
     pprint(config)
     
     data = loader.load_dataset()
 
-    # clean the data
+    # Clean the data with progress tracking
     cleaner = DataCleaner(config)
-    data = cleaner.clean_data(data)
+    with tqdm(total=1, desc="Cleaning Data") as pbar:
+        data = cleaner.clean_data(data)
+        pbar.update(1)
 
-    
     md = Markdown('# Preprocessing')
     console.print(md)
-    # Preprocess data
+
+    # Preprocess data with progress tracking
     preprocessor = TextPreprocessor(config)
-    data = preprocessor.preprocess_dataset(data)
-    #print(f"Preprocessed data looks like,\n{data.head(5)}\n") #just to verify
+    with tqdm(total=1, desc="Preprocessing Data") as pbar:
+        data = preprocessor.preprocess_dataset(data)
+        pbar.update(1)
 
-    # Split data
+    # Split data with progress tracking
     splitter = DataSplitter(config)
-    train_set, validation_set, test_set = splitter.split_data(data)
+    with tqdm(total=1, desc="Splitting Data") as pbar:
+        train_set, validation_set, test_set = splitter.split_data(data)
+        pbar.update(1)
 
-    table = Table(title=f"Dataset statistics\nTotal datset: {len(train_set)+len(validation_set)+len(test_set)}")
-    table.add_column("Dataset", style = "Cyan")
+    # Display dataset statistics
+    table = Table(title=f"Dataset statistics\nTotal dataset: {len(train_set)+len(validation_set)+len(test_set)}")
+    table.add_column("Dataset", style="Cyan")
     table.add_column("Size (in Rows)")
-    table.add_column("Size (in memeory)")
+    table.add_column("Size (in Memory)")
     table.add_row("Train set", str(len(train_set)), f"{(sys.getsizeof(train_set) / (1024 * 1024)):.2f} Mb")
     table.add_row("Validation set", str(len(validation_set)), f"{(sys.getsizeof(validation_set) / (1024 * 1024)):.2f} Mb")
     table.add_row("Test set", str(len(test_set)), f"{(sys.getsizeof(test_set) / (1024 * 1024)):.2f} Mb")
 
-    
     console.print(table)
-
-    
 
     for feature in config['input_features']:
         if feature['encoder'] == 'roberta':
