@@ -41,15 +41,32 @@ class Loader:
 
     def load_config(self, config_path):
         logging.info(f"Loading config from {config_path}")
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+        except FileNotFoundError:
+            logging.error(f"Configuration file {config_path} not found.")
+            raise
+        except yaml.YAMLError as e:
+            logging.error(f"Error parsing configuration file: {e}")
+            raise
         logging.info("Config loaded successfully")
         return config
 
     def load_dataset(self):
         dataset_config = self.config['dataset']
         logging.info(f"Loading dataset from {dataset_config['path']}")
-        self.data = pd.read_csv(dataset_config['path'], delimiter=dataset_config['delimiter'], encoding='utf-8', encoding_errors='ignore')
+        try:
+            self.data = pd.read_csv(dataset_config['path'], delimiter=dataset_config['delimiter'], encoding='utf-8', encoding_errors='ignore')
+        except FileNotFoundError:
+            logging.error(f"Dataset file {dataset_config['path']} not found.")
+            raise
+        except pd.errors.ParserError as e:
+            logging.error(f"Error parsing dataset file: {e}")
+            raise
+        except UnicodeDecodeError as e:
+            logging.error(f"Error decoding dataset file: {e}")
+            raise
         logging.info("Dataset loaded successfully")
         return self.data
     
@@ -674,4 +691,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
