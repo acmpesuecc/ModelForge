@@ -43,17 +43,42 @@ class Loader:
 
     def load_config(self, config_path):
         logging.info(f"Loading config from {config_path}")
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-        logging.info("Config loaded successfully")
-        return config
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+            logging.info("Config loaded successfully")
+            return config
+        
+        except FileNotFoundError:
+            logging.error(f"Config file not found at {config_path}.")
+        except yaml.YAMLError as e:
+            logging.error(f"Error loading YAML config: {e}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while loading config: {e}")
 
     def load_dataset(self):
-        dataset_config = self.config['dataset']
-        logging.info(f"Loading dataset from {dataset_config['path']}")
-        self.data = pd.read_csv(dataset_config['path'], delimiter=dataset_config['delimiter'])
-        logging.info("Dataset loaded successfully")
-        return self.data
+        dataset_config = self.config.get('dataset', {})
+        file_path = dataset_config.get('path')
+        delimiter = dataset_config.get('delimiter', ',')
+
+        if not file_path:
+            logging.error("Dataset file path is missing in the configuration.")
+            return None
+
+        try:
+            logging.info(f"Loading dataset from {file_path}")
+            self.data = pd.read_csv(file_path, delimiter=delimiter)
+            logging.info("Dataset loaded successfully")
+            return self.data
+        
+        except FileNotFoundError:
+            logging.error(f"Error: The dataset file at {file_path} was not found.")
+        except pd.errors.EmptyDataError:
+            logging.error("Error: The dataset file is empty.")
+        except pd.errors.ParserError:
+            logging.error("Error: The dataset file is corrupt or has a format issue.")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred while loading the dataset: {e}")
     
 class DataCleaner:
     def __init__(self, config):
